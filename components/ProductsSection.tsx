@@ -1,4 +1,4 @@
-// ProductsSection.tsx - Updated with context
+// ProductsSection.tsx - Fixed flickering issue
 import React, { useState, useLayoutEffect, useRef } from "react";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
@@ -50,9 +50,13 @@ const ProductsSection: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const rippleRef = useRef<HTMLDivElement>(null);
 
-  // Update global theme color whenever activeIndex changes
+  // Update global theme color with a slight delay for smooth transition
   useLayoutEffect(() => {
-    setActiveColor(PRODUCTS[activeIndex].themeColor);
+    const timer = setTimeout(() => {
+      setActiveColor(PRODUCTS[activeIndex].themeColor);
+    }, 400); // Delay color change to mid-transition
+
+    return () => clearTimeout(timer);
   }, [activeIndex, setActiveColor]);
 
   const nextProduct = () => {
@@ -176,7 +180,7 @@ const ProductsSection: React.FC = () => {
   return (
     <section
       ref={sectionRef}
-      className="relative w-full min-h-screen overflow-hidden flex flex-col justify-between md:justify-center items-center z-10 pt-40 md:pt-48 pb-16 md:pb-0 transition-colors duration-700"
+      className="relative w-full min-h-screen overflow-hidden flex flex-col justify-between md:justify-center items-center z-10 pt-40 md:pt-48 pb-16 md:pb-0 transition-colors duration-[800ms] ease-in-out"
       style={{ backgroundColor: activeProduct.themeColor }}
     >
       {/* WAVY TOP SECTION */}
