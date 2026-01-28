@@ -1,4 +1,4 @@
-// ProductsSection.tsx - Fixed flickering issue
+// ProductsSection.tsx - Completely refactored to eliminate flickering
 import React, { useState, useLayoutEffect, useRef } from "react";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
@@ -44,33 +44,72 @@ const PRODUCTS: Product[] = [
 
 const ProductsSection: React.FC = () => {
   const [activeIndex, setActiveIndex] = useState(0);
+  const [displayIndex, setDisplayIndex] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const { setActiveColor } = useProductTheme();
   const sectionRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const rippleRef = useRef<HTMLDivElement>(null);
+  const bgRef = useRef<HTMLDivElement>(null);
 
-  // Update global theme color with a slight delay for smooth transition
+  // Update global theme color smoothly
   useLayoutEffect(() => {
-    const timer = setTimeout(() => {
-      setActiveColor(PRODUCTS[activeIndex].themeColor);
-    }, 400); // Delay color change to mid-transition
-
-    return () => clearTimeout(timer);
+    setActiveColor(PRODUCTS[activeIndex].themeColor);
   }, [activeIndex, setActiveColor]);
 
-  const nextProduct = () => {
+  const changeProduct = (newIndex: number) => {
     if (isTransitioning) return;
+
     setIsTransitioning(true);
-    setActiveIndex((prev) => (prev + 1) % PRODUCTS.length);
-    setTimeout(() => setIsTransitioning(false), 800);
+
+    // Animate background color change using GSAP for smoothness
+    if (bgRef.current) {
+      gsap.to(bgRef.current, {
+        backgroundColor: PRODUCTS[newIndex].themeColor,
+        duration: 0.8,
+        ease: "power2.inOut",
+      });
+    }
+
+    // Fade out current content
+    const tl = gsap.timeline({
+      onComplete: () => {
+        setDisplayIndex(newIndex);
+        setActiveIndex(newIndex);
+        setIsTransitioning(false);
+      },
+    });
+
+    tl.to(".active-product-img", {
+      scale: 0.5,
+      opacity: 0,
+      y: 80,
+      rotation: 15,
+      duration: 0.4,
+      ease: "power2.in",
+    });
+
+    tl.to(
+      [".product-tagline", ".product-name", ".product-button"],
+      {
+        opacity: 0,
+        y: 30,
+        duration: 0.3,
+        stagger: 0.05,
+        ease: "power2.in",
+      },
+      "-=0.3",
+    );
+  };
+
+  const nextProduct = () => {
+    const newIndex = (activeIndex + 1) % PRODUCTS.length;
+    changeProduct(newIndex);
   };
 
   const prevProduct = () => {
-    if (isTransitioning) return;
-    setIsTransitioning(true);
-    setActiveIndex((prev) => (prev - 1 + PRODUCTS.length) % PRODUCTS.length);
-    setTimeout(() => setIsTransitioning(false), 800);
+    const newIndex = (activeIndex - 1 + PRODUCTS.length) % PRODUCTS.length;
+    changeProduct(newIndex);
   };
 
   useLayoutEffect(() => {
@@ -115,6 +154,7 @@ const ProductsSection: React.FC = () => {
     return () => ctx.revert();
   }, []);
 
+  // Animate in new content when displayIndex changes
   useLayoutEffect(() => {
     const tl = gsap.timeline();
 
@@ -167,22 +207,27 @@ const ProductsSection: React.FC = () => {
       yoyo: true,
     });
 
-    // Animate heading visibility on product change
     gsap.fromTo(
       ".products-heading",
       { opacity: 0, scale: 0.95 },
       { opacity: 1, scale: 1, duration: 0.6, ease: "power2.out" },
     );
-  }, [activeIndex]);
+  }, [displayIndex]);
 
-  const activeProduct = PRODUCTS[activeIndex];
+  const activeProduct = PRODUCTS[displayIndex];
 
   return (
     <section
       ref={sectionRef}
-      className="relative w-full min-h-screen overflow-hidden flex flex-col justify-between md:justify-center items-center z-10 pt-40 md:pt-48 pb-16 md:pb-0 transition-colors duration-[800ms] ease-in-out"
-      style={{ backgroundColor: activeProduct.themeColor }}
+      className="relative w-full min-h-screen overflow-hidden flex flex-col justify-between md:justify-center items-center z-10 pt-40 md:pt-48 pb-16 md:pb-0"
     >
+      {/* ANIMATED BACKGROUND - using ref for GSAP control */}
+      <div
+        ref={bgRef}
+        className="absolute inset-0 w-full h-full"
+        style={{ backgroundColor: activeProduct.themeColor }}
+      />
+
       {/* WAVY TOP SECTION */}
       <div className="absolute top-0 left-0 w-full pointer-events-none z-0 -translate-y-1">
         <svg
@@ -196,6 +241,7 @@ const ProductsSection: React.FC = () => {
           ></path>
         </svg>
       </div>
+
       {/* ENHANCED BACKGROUND DECORATION */}
       <div
         ref={rippleRef}
@@ -204,7 +250,7 @@ const ProductsSection: React.FC = () => {
         {[...Array(8)].map((_, i) => (
           <div
             key={i}
-            className="ripple-circle absolute rounded-full border-2 border-white/15 "
+            className="ripple-circle absolute rounded-full border-2 border-white/15"
             style={{
               width: `${(i + 1) * 280}px`,
               height: `${(i + 1) * 280}px`,
@@ -233,7 +279,7 @@ const ProductsSection: React.FC = () => {
       {/* SLIDE INDICATOR */}
       <div className="absolute mt-24 top-8 md:top-12 right-5 md:right-12 z-40 flex items-baseline gap-2 md:gap-3 text-white/40 font-bebas text-3xl md:text-4xl">
         <span className="text-white text-5xl md:text-7xl font-bold transition-all duration-300">
-          {activeIndex + 1}
+          {displayIndex + 1}
         </span>
         <span className="text-2xl">/</span>
         <span className="text-2xl">{PRODUCTS.length}</span>
@@ -251,12 +297,14 @@ const ProductsSection: React.FC = () => {
 
           <div className="relative w-[280px] h-[280px] md:w-[520px] md:h-[520px] bg-gradient-to-br from-[#fdfcf8] to-[#f5f5f0] rounded-full flex items-center justify-center overflow-visible shadow-[0_0_80px_rgba(0,0,0,0.4)] border-4 border-white/10">
             <img
+              key={`splash-${displayIndex}`}
               src={activeProduct.splash}
               className="absolute w-[160%] h-[160%] object-contain pointer-events-none opacity-90 contrast-125 mix-blend-multiply"
               alt="splash"
             />
             <div className="relative h-[115%] w-full flex items-center justify-center active-product-img">
               <img
+                key={`product-${displayIndex}`}
                 src={activeProduct.image}
                 alt={activeProduct.name}
                 className="h-full object-contain drop-shadow-[0_60px_100px_rgba(0,0,0,0.7)] z-10"
@@ -268,7 +316,10 @@ const ProductsSection: React.FC = () => {
         {/* PRODUCT DETAILS */}
         <div className="product-info-text relative md:absolute left-0 md:left-24 top-auto md:top-1/2 md:-translate-y-1/2 z-30 flex flex-col items-start md:items-start text-white w-full md:max-w-lg px-5 md:px-0">
           <div className="relative mb-4 md:mb-6">
-            <span className="product-tagline font-script text-3xl md:text-6xl lowercase block text-white/95 drop-shadow-lg">
+            <span
+              key={`tagline-${displayIndex}`}
+              className="product-tagline font-script text-3xl md:text-6xl lowercase block text-white/95 drop-shadow-lg"
+            >
               {activeProduct.tagline}
             </span>
             <div className="absolute -right-16 md:-right-20 top-2 w-20 md:w-24 h-10 md:h-12 pointer-events-none hidden lg:block">
@@ -285,6 +336,7 @@ const ProductsSection: React.FC = () => {
             </div>
           </div>
           <h3
+            key={`name-${displayIndex}`}
             className="product-name font-bebas text-5xl md:text-[7.5vw] lg:text-[6.5vw] mb-8 md:mb-14 leading-none uppercase drop-shadow-2xl"
             style={{ letterSpacing: "0.2em" }}
           >
@@ -302,12 +354,7 @@ const ProductsSection: React.FC = () => {
         <button
           onClick={prevProduct}
           disabled={isTransitioning}
-          className="pointer-events-auto group w-14 h-14 md:w-20 md:h-20 rounded-full border-2 border-white/30 backdrop-blur-sm flex items-center justify-center text-white text-2xl md:text-3xl hover:bg-white hover:border-white transition-all duration-300 shadow-[0_8px_32px_rgba(0,0,0,0.3)] hover:shadow-[0_12px_48px_rgba(0,0,0,0.5)] hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed"
-          style={{ color: isTransitioning ? "white" : undefined }}
-          onMouseEnter={(e) =>
-            (e.currentTarget.style.color = activeProduct.themeColor)
-          }
-          onMouseLeave={(e) => (e.currentTarget.style.color = "white")}
+          className="pointer-events-auto group w-14 h-14 md:w-20 md:h-20 rounded-full border-2 border-white/30 backdrop-blur-sm flex items-center justify-center text-white text-2xl md:text-3xl hover:bg-white hover:border-white transition-all duration-300 shadow-[0_8px_32px_rgba(0,0,0,0.3)] hover:shadow-[0_12px_48px_rgba(0,0,0,0.5)] hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed active:scale-95"
         >
           <span className="transform group-hover:-translate-x-1 transition-transform duration-300">
             ←
@@ -316,12 +363,7 @@ const ProductsSection: React.FC = () => {
         <button
           onClick={nextProduct}
           disabled={isTransitioning}
-          className="pointer-events-auto group w-14 h-14 md:w-20 md:h-20 rounded-full border-2 border-white/30 backdrop-blur-sm flex items-center justify-center text-white text-2xl md:text-3xl hover:bg-white hover:border-white transition-all duration-300 shadow-[0_8px_32px_rgba(0,0,0,0.3)] hover:shadow-[0_12px_48px_rgba(0,0,0,0.5)] hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed"
-          style={{ color: isTransitioning ? "white" : undefined }}
-          onMouseEnter={(e) =>
-            (e.currentTarget.style.color = activeProduct.themeColor)
-          }
-          onMouseLeave={(e) => (e.currentTarget.style.color = "white")}
+          className="pointer-events-auto group w-14 h-14 md:w-20 md:h-20 rounded-full border-2 border-white/30 backdrop-blur-sm flex items-center justify-center text-white text-2xl md:text-3xl hover:bg-white hover:border-white transition-all duration-300 shadow-[0_8px_32px_rgba(0,0,0,0.3)] hover:shadow-[0_12px_48px_rgba(0,0,0,0.5)] hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed active:scale-95"
         >
           <span className="transform group-hover:translate-x-1 transition-transform duration-300">
             →
@@ -335,14 +377,12 @@ const ProductsSection: React.FC = () => {
           <button
             key={idx}
             onClick={() => {
-              if (!isTransitioning && idx !== activeIndex) {
-                setIsTransitioning(true);
-                setActiveIndex(idx);
-                setTimeout(() => setIsTransitioning(false), 800);
+              if (!isTransitioning && idx !== displayIndex) {
+                changeProduct(idx);
               }
             }}
             className={`w-3 h-3 rounded-full transition-all duration-300 ${
-              idx === activeIndex
+              idx === displayIndex
                 ? "bg-white w-8 shadow-lg"
                 : "bg-white/30 hover:bg-white/60"
             }`}

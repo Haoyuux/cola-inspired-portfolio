@@ -4,10 +4,12 @@ import react from "@vitejs/plugin-react";
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, ".", "");
-  return {
-    // Remove or comment out the base path for Vercel
-    // base: "/cola-inspired-portfolio/",
 
+  // Use base path only for GitHub Pages
+  const isGitHubPages = process.env.GITHUB_ACTIONS === "true";
+
+  return {
+    base: isGitHubPages ? "/cola-inspired-portfolio/" : "/",
     server: {
       port: 3000,
       host: "0.0.0.0",
