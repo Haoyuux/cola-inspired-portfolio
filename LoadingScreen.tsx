@@ -109,7 +109,7 @@ const LoadingScreen: React.FC<LoadingScreenProps> = ({ onLoadComplete }) => {
       </div>
 
       {/* Progress bar */}
-      <div className="loading-bar-container w-64 md:w-96 h-2 bg-white/10 rounded-full overflow-hidden backdrop-blur-sm">
+      {/* <div className="loading-bar-container w-64 md:w-96 h-2 bg-white/10 rounded-full overflow-hidden backdrop-blur-sm">
         <div
           className="h-full bg-gradient-to-r from-red-500 via-white to-red-500 rounded-full transition-all duration-300 ease-out shadow-lg"
           style={{
@@ -117,7 +117,7 @@ const LoadingScreen: React.FC<LoadingScreenProps> = ({ onLoadComplete }) => {
             boxShadow: "0 0 20px rgba(255, 255, 255, 0.5)",
           }}
         />
-      </div>
+      </div> */}
 
       {/* Percentage */}
       <div className="mt-4 font-bebas text-xl md:text-2xl text-white/60 tracking-wider">

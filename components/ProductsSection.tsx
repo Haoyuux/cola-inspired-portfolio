@@ -1,4 +1,4 @@
-// ProductsSection.tsx - Completely refactored to eliminate flickering
+// ProductsSection.tsx - Mobile optimized to prevent flickering
 import React, { useState, useLayoutEffect, useRef } from "react";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
@@ -62,12 +62,20 @@ const ProductsSection: React.FC = () => {
 
     setIsTransitioning(true);
 
-    // Animate background color change using GSAP for smoothness
+    // Force hardware acceleration on background
     if (bgRef.current) {
+      bgRef.current.style.willChange = "background-color";
+      bgRef.current.style.transform = "translateZ(0)";
+
       gsap.to(bgRef.current, {
         backgroundColor: PRODUCTS[newIndex].themeColor,
         duration: 0.8,
         ease: "power2.inOut",
+        onComplete: () => {
+          if (bgRef.current) {
+            bgRef.current.style.willChange = "auto";
+          }
+        },
       });
     }
 
@@ -87,6 +95,7 @@ const ProductsSection: React.FC = () => {
       rotation: 15,
       duration: 0.4,
       ease: "power2.in",
+      force3D: true,
     });
 
     tl.to(
@@ -97,6 +106,7 @@ const ProductsSection: React.FC = () => {
         duration: 0.3,
         stagger: 0.05,
         ease: "power2.in",
+        force3D: true,
       },
       "-=0.3",
     );
@@ -125,6 +135,7 @@ const ProductsSection: React.FC = () => {
         yoyo: true,
         duration: 4,
         ease: "sine.inOut",
+        force3D: true,
       });
 
       gsap.to(".products-heading", {
@@ -168,13 +179,14 @@ const ProductsSection: React.FC = () => {
         rotation: 0,
         duration: 1,
         ease: "back.out(1.4)",
+        force3D: true,
       },
     );
 
     tl.fromTo(
       ".product-tagline",
       { opacity: 0, y: 30 },
-      { opacity: 1, y: 0, duration: 0.6, ease: "power2.out" },
+      { opacity: 1, y: 0, duration: 0.6, ease: "power2.out", force3D: true },
       "-=0.6",
     );
 
@@ -187,6 +199,7 @@ const ProductsSection: React.FC = () => {
         letterSpacing: "0.2em",
         duration: 0.8,
         ease: "power3.out",
+        force3D: true,
       },
       "-=0.4",
     );
@@ -194,7 +207,7 @@ const ProductsSection: React.FC = () => {
     tl.fromTo(
       ".product-button",
       { opacity: 0, y: 20 },
-      { opacity: 1, y: 0, duration: 0.5 },
+      { opacity: 1, y: 0, duration: 0.5, force3D: true },
       "-=0.3",
     );
 
@@ -205,6 +218,7 @@ const ProductsSection: React.FC = () => {
       ease: "sine.inOut",
       repeat: -1,
       yoyo: true,
+      force3D: true,
     });
 
     gsap.fromTo(
@@ -221,11 +235,17 @@ const ProductsSection: React.FC = () => {
       ref={sectionRef}
       className="relative w-full min-h-screen overflow-hidden flex flex-col justify-between md:justify-center items-center z-10 pt-40 md:pt-48 pb-16 md:pb-0"
     >
-      {/* ANIMATED BACKGROUND - using ref for GSAP control */}
+      {/* ANIMATED BACKGROUND - Hardware accelerated */}
       <div
         ref={bgRef}
         className="absolute inset-0 w-full h-full"
-        style={{ backgroundColor: activeProduct.themeColor }}
+        style={{
+          backgroundColor: activeProduct.themeColor,
+          WebkitBackfaceVisibility: "hidden",
+          backfaceVisibility: "hidden",
+          WebkitPerspective: 1000,
+          perspective: 1000,
+        }}
       />
 
       {/* WAVY TOP SECTION */}
@@ -254,6 +274,7 @@ const ProductsSection: React.FC = () => {
             style={{
               width: `${(i + 1) * 280}px`,
               height: `${(i + 1) * 280}px`,
+              willChange: "transform, opacity",
             }}
           />
         ))}
@@ -289,18 +310,29 @@ const ProductsSection: React.FC = () => {
       <div
         ref={containerRef}
         className="relative w-full max-w-7xl flex-1 flex flex-col md:flex-row items-center justify-center md:justify-between px-5 md:px-10"
+        style={{ willChange: "transform" }}
       >
         {/* CENTRAL SPOTLIGHT */}
         <div className="relative flex items-center justify-center z-20 w-full md:w-auto flex-shrink-0 mb-8 md:mb-0 md:ml-[25%]">
           <div className="spotlight-circle absolute w-[350px] h-[350px] md:w-[750px] md:h-[750px] bg-gradient-radial from-white/10 to-transparent rounded-full blur-[100px]"></div>
           <div className="absolute w-[300px] h-[300px] md:w-[680px] md:h-[680px] bg-white/5 rounded-full blur-[80px]"></div>
 
-          <div className="relative w-[280px] h-[280px] md:w-[520px] md:h-[520px] bg-gradient-to-br from-[#fdfcf8] to-[#f5f5f0] rounded-full flex items-center justify-center overflow-visible shadow-[0_0_80px_rgba(0,0,0,0.4)] border-4 border-white/10">
+          <div
+            className="relative w-[280px] h-[280px] md:w-[520px] md:h-[520px] bg-gradient-to-br from-[#fdfcf8] to-[#f5f5f0] rounded-full flex items-center justify-center overflow-visible shadow-[0_0_80px_rgba(0,0,0,0.4)] border-4 border-white/10"
+            style={{
+              WebkitBackfaceVisibility: "hidden",
+              backfaceVisibility: "hidden",
+            }}
+          >
             <img
               key={`splash-${displayIndex}`}
               src={activeProduct.splash}
               className="absolute w-[160%] h-[160%] object-contain pointer-events-none opacity-90 contrast-125 mix-blend-multiply"
               alt="splash"
+              style={{
+                WebkitBackfaceVisibility: "hidden",
+                backfaceVisibility: "hidden",
+              }}
             />
             <div className="relative h-[115%] w-full flex items-center justify-center active-product-img">
               <img
@@ -308,6 +340,10 @@ const ProductsSection: React.FC = () => {
                 src={activeProduct.image}
                 alt={activeProduct.name}
                 className="h-full object-contain drop-shadow-[0_60px_100px_rgba(0,0,0,0.7)] z-10"
+                style={{
+                  WebkitBackfaceVisibility: "hidden",
+                  backfaceVisibility: "hidden",
+                }}
               />
             </div>
           </div>
